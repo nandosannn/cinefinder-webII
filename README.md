@@ -141,3 +141,7 @@ Diferente de sistemas muito complexos como a Amazon Prime, que possuem um vasto 
 - Permitir filtragem:
   - Por filme
   - Por data
+
+## 4. Link do Projeto escrito e vídeo
+
+[Arquivos no Drive](https://drive.google.com/drive/folders/15M8KNpg-0WwB8Phuqfl7JoVw4xv0fqVP?usp=sharing)
