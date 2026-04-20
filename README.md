@@ -150,7 +150,50 @@ Diferente de sistemas muito complexos como a Amazon Prime, que possuem um vasto 
 - `internal/repository` → acesso a dados  
 - `internal/db` → queries e integração com banco  
 - `internal/model` → structs do domínio  
-- `internal/middleware` → middlewares HTTP  
+- `internal/middleware` → middlewares HTTP
+
+## 5. Como rodar o projeto CineFinder
+
+#### Pré-requisitos
+
+Antes de começar, você precisa ter instalado:
+
+- [Go](https://go.dev/) (versão 1.20+)
+- PostgreSQL
+- Git
+
+---
+
+#### Clonar o repositório
+
+```
+git clone git@github.com:nandosannn/cinefinder-webII.git
+cd cinefinder-webII
+```
+
+#### Instalar dependências
+
+```
+go mod tidy
+```
+
+#### Configurar variáveis de ambiente
+
+```
+touch .env
+```
+
+Adicionar o conteúdo:
+
+```
+DATABASE_URL=postgres://seu-suario:sua-senha@localhost:5432/seu-banco
+```
+#### Configurar variáveis de ambiente
+
+```
+go run cmd/api/main.go
+```
+
 
 ## 5. Link do Projeto escrito e vídeo
 
