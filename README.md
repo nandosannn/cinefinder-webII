@@ -142,6 +142,44 @@ Diferente de sistemas muito complexos como a Amazon Prime, que possuem um vasto 
   - Por filme
   - Por data
 
-## 4. Link do Projeto escrito e vídeo
+## 4. Estrutura do Projeto
+
+cinefinder-webII/
+│
+├── cmd/
+│   └── api/
+│       └── main.go          
+│
+├── internal/
+│   ├── handler/             
+│   │   ├── auth_handler.go
+│   │   ├── movie_handler.go
+│   │
+│   ├── service/             
+│   │   ├── auth_service.go
+│   │   ├── movie_service.go
+│   │
+│   ├── repository/          
+│   │   ├── movie_repository.go
+│   │   ├── user_repository.go
+│   │
+│   ├── db/                  
+│   │   ├── queries/
+│   │   │   ├── movie.sql
+│   │   │   ├── user.sql
+│   │   │
+│   │
+│   ├── model/               
+│   │   ├── movie.go
+│   │   ├── user.go
+│   │
+│   └── middleware/
+│       ├── auth.go
+│       └── logger.go
+│
+├── go.mod
+└── README.md
+
+## 5. Link do Projeto escrito e vídeo
 
 [Arquivos no Drive](https://drive.google.com/drive/folders/15M8KNpg-0WwB8Phuqfl7JoVw4xv0fqVP?usp=sharing)
