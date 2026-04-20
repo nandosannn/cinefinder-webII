@@ -1,0 +1,31 @@
+# Binários
+/bin/
+/build/
+
+# Arquivos do Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Arquivos de teste
+*.test
+
+# Cache
+*.out
+*.log
+
+# Dependências (se usar vendor)
+vendor/
+
+# Arquivos de ambiente
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

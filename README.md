@@ -144,8 +144,6 @@ Diferente de sistemas muito complexos como a Amazon Prime, que possuem um vasto 
 
 ## 4. Estrutura do Projeto
 
-## 📦 Estrutura do Projeto
-
 - `cmd/api` → ponto de entrada da aplicação  
 - `internal/handler` → camada HTTP (rotas)  
 - `internal/service` → regras de negócio  
