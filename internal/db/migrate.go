@@ -11,10 +11,10 @@ func RunMigrations(pool *pgxpool.Pool) {
 	query := `
 	CREATE TABLE IF NOT EXISTS movies (
 		id SERIAL PRIMARY KEY,
-		título TEXT NOT NULL,
-		diretor TEXT NOT NULL,
-		ano INT NOT NULL,
-		genero TEXT NOT NULL,
+		title TEXT NOT NULL,
+		director TEXT NOT NULL,
+		year INT NOT NULL,
+		genre TEXT NOT NULL,
 		created_at TIMESTAMP DEFAULT NOW()
 	);
 	`
