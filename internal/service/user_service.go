@@ -14,6 +14,7 @@ type UserServiceInterface interface {
 	Create(user model.User) (*model.User, error)
 	List() ([]model.User, error)
 	GetByID(id int) (*model.User, error)
+	ValidateUser(email, password string) (*model.User, error)
 }
 
 // Implementação real
@@ -27,14 +28,14 @@ func NewUserService(db *pgxpool.Pool) *UserService {
 
 func (s *UserService) Create(user model.User) (*model.User, error) {
 	var userCount int
-	
+
 	checkQuery := "SELECT COUNT(*) FROM users WHERE id = $1 OR email = $2"
-	
+
 	err := s.db.QueryRow(context.Background(), checkQuery, user.ID, user.Email).Scan(&userCount)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	if userCount > 0 {
 		return nil, errors.New("Usuário já cadastrado")
 	}
@@ -96,5 +97,18 @@ func (s *UserService) GetByID(id int) (*model.User, error) {
 		return nil, err
 	}
 
+	return &u, nil
+}
+
+// Necessário pro auth
+func (s *UserService) ValidateUser(email, password string) (*model.User, error) {
+	query := "SELECT id, name, email, password, created_at FROM users WHERE email = $1 AND password = $2"
+	var u model.User
+	err := s.db.QueryRow(context.Background(), query, email, password).
+		Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.CreatedAt)
+
+	if err != nil {
+		return nil, errors.New("credenciais inválidas")
+	}
 	return &u, nil
 }

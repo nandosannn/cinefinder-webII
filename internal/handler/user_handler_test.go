@@ -28,13 +28,23 @@ func (m *mockUserService) Create(user model.User) (*model.User, error) {
 	return &user, nil
 }
 
+// Para implementar ValidateUser
+func (m *mockUserService) ValidateUser(email, password string) (*model.User, error) {
+	for _, u := range m.users {
+		if u.Email == email && u.Password == password {
+			return &u, nil
+		}
+	}
+	return nil, errors.New("credenciais inválidas")
+}
+
 func TestCreateUser_Success(t *testing.T) {
 	mockService := &mockUserService{}
 	handler := NewUserHandler(mockService)
 
 	body := model.User{
-		Name:    "Artemis",
-		Email:   "artemis@nasa.com",
+		Name:     "Artemis",
+		Email:    "artemis@nasa.com",
 		Password: "password",
 	}
 
@@ -64,7 +74,7 @@ func TestCreateUser_Success(t *testing.T) {
 func TestCreateUser_AlreadyExists(t *testing.T) {
 	mockService := &mockUserService{}
 	handler := NewUserHandler(mockService)
-	
+
 	body := model.User{
 		Name:     "Artemis",
 		Email:    "artemis@nasa.com",
