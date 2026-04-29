@@ -11,16 +11,18 @@ import (
 
 var jwtKey = []byte("chave_secreta")
 
-type context string
+type contextKey string
+
 const UserIdKey contextKey = "user_id"
 
-func AuthMiddleware(next http.Handler) http.Handler{
+func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == ""{
+		if authHeader == "" {
 			http.Error(w, "Token de autenticação não fornecido", http.StatusUnauthorized)
 			return
 		}
+
 		parts := strings.Split(authHeader, " ")
 		if len(parts) != 2 || parts[0] != "Bearer" {
 			http.Error(w, "Formato de token inválido", http.StatusUnauthorized)
@@ -32,8 +34,7 @@ func AuthMiddleware(next http.Handler) http.Handler{
 
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("método de assinatura inesperado: %v", token.Header["algo"])
-
+				return nil, fmt.Errorf("método de assinatura inesperado: %v", token.Header["alg"])
 			}
 			return jwtKey, nil
 		})
@@ -49,8 +50,7 @@ func AuthMiddleware(next http.Handler) http.Handler{
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDKey, int(userID))
+		ctx := context.WithValue(r.Context(), UserIdKey, int(userID))
 		next.ServeHTTP(w, r.WithContext(ctx))
-
-	})	
+	})
 }

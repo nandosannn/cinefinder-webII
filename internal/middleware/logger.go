@@ -17,7 +17,7 @@ func Logger(next http.Handler) http.Handler {
 			r.Method,
 			r.RequestURI,
 			r.RemoteAddr,
-			time.Since(start)
+			time.Since(start),
 		)
 	})
 }
