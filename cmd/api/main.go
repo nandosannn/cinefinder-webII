@@ -3,6 +3,7 @@ package main
 import (
 	"cinefinder/internal/db"
 	"cinefinder/internal/handler"
+	"cinefinder/internal/middleware"
 	"cinefinder/internal/service"
 	"net/http"
 
@@ -34,6 +35,9 @@ func main() {
 	userService := service.NewUserService(dbPool)
 	userHandler := handler.NewUserHandler(userService)
 
+	authService := &service.AuthService{}
+	loginHandler := handler.LoginHandler(authService, userService)
+
 	// router
 	r := chi.NewRouter()
 
@@ -42,19 +46,27 @@ func main() {
 		w.Write([]byte(`{"status": "ok", "message": "Cinefinder API is running 🚀"}`))
 	})
 
-	r.Post("/movies", movieHandler.Create)
-	r.Get("/movies", movieHandler.List)
-	r.Get("/movies/{id}", movieHandler.GetByID)
-
-	r.Post("/loans", loanHandler.Create)
-	r.Get("/loans", loanHandler.List)
-	r.Get("/loans/{id}", loanHandler.GetByID)
-
 	r.Post("/users", userHandler.Create)
-	r.Get("/users", userHandler.List)
-	r.Get("/users/{id}", userHandler.GetByID)
+	r.Post("/login", loginHandler)
+
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.AuthMiddleware)
+
+		r.Post("/movies", movieHandler.Create)
+		r.Get("/movies", movieHandler.List)
+		r.Get("/movies/{id}", movieHandler.GetByID)
+
+		r.Post("/loans", loanHandler.Create)
+		r.Get("/loans", loanHandler.List)
+		r.Get("/loans/{id}", loanHandler.GetByID)
+
+		r.Get("/users", userHandler.List)
+		r.Get("/users/{id}", userHandler.GetByID)
+	})
 
 	// subir servidor
 	println("Servidor rodando em http://localhost:3000 🚀")
-	http.ListenAndServe(":3000", r)
+	if err := http.ListenAndServe(":3000", r); err != nil {
+		println("Erro ao iniciar servidor:", err.Error())
+	}
 }
