@@ -1,18 +1,19 @@
 package main
 
 import (
+	"net/http"
+
+	"cinefinder/internal/database"
 	"cinefinder/internal/db"
 	"cinefinder/internal/handler"
 	"cinefinder/internal/middleware"
 	"cinefinder/internal/service"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-
 	// carregar .env
 	if err := godotenv.Load(); err != nil {
 		println("Aviso: .env não carregado")
@@ -22,11 +23,14 @@ func main() {
 	dbPool := db.NewDB()
 	defer dbPool.Close()
 
+	// criar queries do sqlc
+	queries := database.New(dbPool)
+
 	// criar tabela
 	db.RunMigrations(dbPool)
 
 	// service + handler
-	movieService := service.NewMovieService(dbPool)
+	movieService := service.NewMovieService(queries)
 	movieHandler := handler.NewMovieHandler(movieService)
 
 	loanService := service.NewLoanService(dbPool)
@@ -62,10 +66,12 @@ func main() {
 
 		r.Get("/users", userHandler.List)
 		r.Get("/users/{id}", userHandler.GetByID)
+		r.Put("/movies/{id}", movieHandler.Update)
+		r.Delete("/movies/{id}", movieHandler.Delete)
 	})
 
 	// subir servidor
-	println("Servidor rodando em http://localhost:3000 🚀")
+	println("Servidor rodando em http://localhost:3000")
 	if err := http.ListenAndServe(":3000", r); err != nil {
 		println("Erro ao iniciar servidor:", err.Error())
 	}
