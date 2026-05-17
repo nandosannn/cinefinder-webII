@@ -85,3 +85,11 @@ func (m *mockMovieService) GetByID(id int) (*model.Movie, error) {
 		Genre:    "Sci-Fi",
 	}, nil
 }
+func (m *mockMovieService) Update(id int, movie model.Movie) (*model.Movie, error) {
+	movie.ID = id
+	return &movie, nil
+}
+
+func (m *mockMovieService) Delete(id int) error {
+	return nil
+}

@@ -4,98 +4,121 @@ import (
 	"context"
 	"errors"
 
+	"cinefinder/internal/database"
 	"cinefinder/internal/model"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Interface (IMPORTANTE para testes)
 type MovieServiceInterface interface {
 	Create(movie model.Movie) (*model.Movie, error)
 	List() ([]model.Movie, error)
 	GetByID(id int) (*model.Movie, error)
+	Update(id int, movie model.Movie) (*model.Movie, error)
+	Delete(id int) error
 }
 
-// Implementação real
 type MovieService struct {
-	db *pgxpool.Pool
+	queries *database.Queries
 }
 
-func NewMovieService(db *pgxpool.Pool) *MovieService {
-	return &MovieService{db: db}
+func NewMovieService(queries *database.Queries) *MovieService {
+	return &MovieService{queries: queries}
 }
 
 func (s *MovieService) Create(movie model.Movie) (*model.Movie, error) {
-	var movieCount int
-	
-	checkQuery := "SELECT COUNT(*) FROM movies WHERE title = $1 AND director = $2 AND year = $3 AND genre = $4"
-	
-	err := s.db.QueryRow(context.Background(), checkQuery, movie.Title, movie.Director, movie.Year, movie.Genre).Scan(&movieCount)
+	movies, err := s.queries.ListMovies(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	
-	if movieCount > 0 {
-		return nil, errors.New("Filme já cadastrado")
-	}
-	
-	query := `
-	INSERT INTO movies (title, director, year, genre, available)
-	VALUES ($1, $2, $3, $4, true)
-	RETURNING id;
-	`
 
-	err = s.db.QueryRow(context.Background(), query,
-		movie.Title,
-		movie.Director,
-		movie.Year,
-		movie.Genre,
-	).Scan(&movie.ID)
+	for _, m := range movies {
+		if m.Title == movie.Title &&
+			m.Director == movie.Director &&
+			int(m.ReleaseYear) == movie.Year &&
+			m.Genre == movie.Genre {
+			return nil, errors.New("Filme já cadastrado")
+		}
+	}
+
+	created, err := s.queries.CreateMovie(context.Background(), database.CreateMovieParams{
+		Title:           movie.Title,
+		Director:        movie.Director,
+		ReleaseYear:     int32(movie.Year),
+		Genre:           movie.Genre,
+		AvailableCopies: 1,
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &movie, nil
+	return &model.Movie{
+		ID:       int(created.ID),
+		Title:    created.Title,
+		Director: created.Director,
+		Year:     int(created.ReleaseYear),
+		Genre:    created.Genre,
+	}, nil
 }
+
 func (s *MovieService) List() ([]model.Movie, error) {
-	rows, err := s.db.Query(context.Background(),
-		"SELECT id, title, director, year, genre FROM movies",
-	)
+	dbMovies, err := s.queries.ListMovies(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	movies := []model.Movie{}
 
-	for rows.Next() {
-		var m model.Movie
-		err := rows.Scan(&m.ID, &m.Title, &m.Director, &m.Year, &m.Genre)
-		if err != nil {
-			return nil, err
-		}
-		movies = append(movies, m)
+	for _, m := range dbMovies {
+		movies = append(movies, model.Movie{
+			ID:       int(m.ID),
+			Title:    m.Title,
+			Director: m.Director,
+			Year:     int(m.ReleaseYear),
+			Genre:    m.Genre,
+		})
 	}
 
 	return movies, nil
 }
 
 func (s *MovieService) GetByID(id int) (*model.Movie, error) {
-	query := `
-	SELECT id, title, director, year, genre
-	FROM movies
-	WHERE id = $1;
-	`
+	m, err := s.queries.GetMovieByID(context.Background(), int32(id))
+	if err != nil {
+		return nil, err
+	}
 
-	var m model.Movie
+	return &model.Movie{
+		ID:       int(m.ID),
+		Title:    m.Title,
+		Director: m.Director,
+		Year:     int(m.ReleaseYear),
+		Genre:    m.Genre,
+	}, nil
+}
 
-	err := s.db.QueryRow(context.Background(), query, id).
-		Scan(&m.ID, &m.Title, &m.Director, &m.Year, &m.Genre)
+func (s *MovieService) Update(id int, movie model.Movie) (*model.Movie, error) {
+	updated, err := s.queries.UpdateMovie(context.Background(), database.UpdateMovieParams{
+		ID:              int32(id),
+		Title:           movie.Title,
+		Director:        movie.Director,
+		ReleaseYear:     int32(movie.Year),
+		Genre:           movie.Genre,
+		AvailableCopies: 1,
+	})
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &m, nil
+	return &model.Movie{
+		ID:       int(updated.ID),
+		Title:    updated.Title,
+		Director: updated.Director,
+		Year:     int(updated.ReleaseYear),
+		Genre:    updated.Genre,
+	}, nil
+}
+
+func (s *MovieService) Delete(id int) error {
+	return s.queries.DeleteMovie(context.Background(), int32(id))
 }
