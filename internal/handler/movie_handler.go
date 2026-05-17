@@ -29,20 +29,42 @@ func (h *MovieHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdMovie, err := h.service.Create(movie)
 	if err != nil {
-		http.Error(w, "Erro ao salvar filme: " + err.Error(), http.StatusInternalServerError)
+		if err.Error() == "Filme já cadastrado" {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, "Erro ao salvar filme: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(createdMovie)
 }
+
+// List retorna todos os filmes. Se os query params ?title= ou ?genre= forem
+// fornecidos, delega para Search filtrando os resultados.
 func (h *MovieHandler) List(w http.ResponseWriter, r *http.Request) {
-	movies, err := h.service.List()
+	title := r.URL.Query().Get("title")
+	genre := r.URL.Query().Get("genre")
+
+	var (
+		movies []model.Movie
+		err    error
+	)
+
+	if title != "" || genre != "" {
+		movies, err = h.service.Search(title, genre)
+	} else {
+		movies, err = h.service.List()
+	}
+
 	if err != nil {
 		http.Error(w, "Erro ao buscar filmes", http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(movies)
 }
 
@@ -61,5 +83,6 @@ func (h *MovieHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(movie)
 }
