@@ -7,4 +7,5 @@ type Movie struct {
 	Year         int    `json:"year"`
 	Genre        string `json:"genre"`
 	Available    bool   `json:"available"`
+	
 }

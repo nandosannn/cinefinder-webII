@@ -58,6 +58,7 @@ func (s *MovieService) Create(movie model.Movie) (*model.Movie, error) {
 
 	return &movie, nil
 }
+
 func (s *MovieService) List() ([]model.Movie, error) {
 	rows, err := s.db.Query(context.Background(),
 		"SELECT id, title, director, year, genre FROM movies",
