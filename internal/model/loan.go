@@ -8,6 +8,10 @@ type Loan struct {
 	ReturnDate time.Time `json:"return_date"`
 	Price      float64   `json:"price"`
 	Returned   bool      `json:"returned"`
-	Movie      Movie     `json:"movie"`
-	User       User      `json:"user"`
+
+	UserID  int `json:"user_id"`
+	MovieID int `json:"movie_id"`
+
+	User  User  `json:"user,omitempty"`
+	Movie Movie `json:"movie,omitempty"`
 }

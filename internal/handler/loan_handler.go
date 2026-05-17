@@ -29,24 +29,32 @@ func (h *LoanHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdLoan, err := h.service.Create(loan)
 	if err != nil {
-		if err.Error() == "Usuário possui empréstimo em aberto" {
+
+		if err.Error() == "Usuário possui empréstimo em aberto" ||
+			err.Error() == "Filme indisponível" {
+
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
+
 		http.Error(w, "Erro ao criar empréstimo: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
+
 	json.NewEncoder(w).Encode(createdLoan)
 }
+
 func (h *LoanHandler) List(w http.ResponseWriter, r *http.Request) {
 	loans, err := h.service.List()
 	if err != nil {
-		http.Error(w, "Erro ao buscar empréstimo", http.StatusInternalServerError)
+		http.Error(w, "Erro ao buscar empréstimos", http.StatusInternalServerError)
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loans)
 }
 
@@ -65,5 +73,6 @@ func (h *LoanHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loan)
 }
