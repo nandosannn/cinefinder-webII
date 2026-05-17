@@ -63,6 +63,7 @@ func main() {
 		r.Post("/loans", loanHandler.Create)
 		r.Get("/loans", loanHandler.List)
 		r.Get("/loans/{id}", loanHandler.GetByID)
+		r.Put("/loans/{id}/return", loanHandler.ReturnMovie)
 
 		r.Get("/users", userHandler.List)
 		r.Get("/users/{id}", userHandler.GetByID)

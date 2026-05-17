@@ -14,6 +14,7 @@ type LoanServiceInterface interface {
 	Create(loan model.Loan) (*model.Loan, error)
 	List() ([]model.Loan, error)
 	GetByID(id int) (*model.Loan, error)
+	ReturnMovie(id int) error
 }
 
 type LoanService struct {
@@ -132,23 +133,6 @@ func (s *LoanService) Create(loan model.Loan) (*model.Loan, error) {
 		return nil, err
 	}
 
-	// diminuir quantidade disponível
-	updateMovieQuery := `
-	UPDATE movies
-	SET available_copies = available_copies - 1
-	WHERE id = $1
-	`
-
-	_, err = s.db.Exec(
-		context.Background(),
-		updateMovieQuery,
-		loan.MovieID,
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &loan, nil
 }
 
@@ -236,4 +220,51 @@ func (s *LoanService) GetByID(id int) (*model.Loan, error) {
 	}
 
 	return &l, nil
+}
+
+func (s *LoanService) ReturnMovie(id int) error {
+
+	var loan model.Loan
+
+	checkQuery := `
+	SELECT id, movie_id, returned
+	FROM loans
+	WHERE id = $1
+	`
+
+	err := s.db.QueryRow(
+		context.Background(),
+		checkQuery,
+		id,
+	).Scan(
+		&loan.ID,
+		&loan.MovieID,
+		&loan.Returned,
+	)
+
+	if err != nil {
+		return errors.New("Empréstimo não encontrado")
+	}
+
+	if loan.Returned {
+		return errors.New("Empréstimo já devolvido")
+	}
+
+	updateLoanQuery := `
+	UPDATE loans
+	SET returned = true
+	WHERE id = $1
+	`
+
+	_, err = s.db.Exec(
+		context.Background(),
+		updateLoanQuery,
+		id,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

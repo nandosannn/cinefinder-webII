@@ -76,3 +76,39 @@ func (h *LoanHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loan)
 }
+
+func (h *LoanHandler) ReturnMovie(w http.ResponseWriter, r *http.Request) {
+
+	idParam := chi.URLParam(r, "id")
+
+	id, err := strconv.Atoi(idParam)
+	if err != nil {
+		http.Error(w, "ID inválido", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.ReturnMovie(id)
+	if err != nil {
+
+		if err.Error() == "Empréstimo já devolvido" ||
+			err.Error() == "Empréstimo não encontrado" {
+
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		http.Error(
+			w,
+			"Erro ao devolver filme: "+err.Error(),
+			http.StatusInternalServerError,
+		)
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Filme devolvido com sucesso",
+	})
+}
