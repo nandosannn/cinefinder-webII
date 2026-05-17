@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"time"
 
 	"cinefinder/internal/model"
 
@@ -49,8 +50,8 @@ func (s *LoanService) Create(loan model.Loan) (*model.Loan, error) {
 		return nil, errors.New("Usuário possui empréstimo em aberto")
 	}
 
-	// verificar disponibilidade do filme
-	var availableCopies int
+	// buscar quantidade total de cópias do filme
+	var totalCopies int
 
 	checkMovieQuery := `
 	SELECT available_copies
@@ -62,14 +63,42 @@ func (s *LoanService) Create(loan model.Loan) (*model.Loan, error) {
 		context.Background(),
 		checkMovieQuery,
 		loan.MovieID,
-	).Scan(&availableCopies)
+	).Scan(&totalCopies)
 
 	if err != nil {
 		return nil, err
 	}
 
-	if availableCopies <= 0 {
-		return nil, errors.New("Filme indisponível")
+	// verificar quantidade de empréstimos ativos
+	var activeLoans int
+
+	activeLoansQuery := `
+	SELECT COUNT(*)
+	FROM loans
+	WHERE movie_id = $1
+	AND returned = false
+	`
+
+	err = s.db.QueryRow(
+		context.Background(),
+		activeLoansQuery,
+		loan.MovieID,
+	).Scan(&activeLoans)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// verificar disponibilidade real
+	if activeLoans >= totalCopies {
+		return nil, errors.New(
+			"Filme indisponível",
+		)
+	}
+
+	// validar datas
+	if !loan.ReturnDate.After(time.Now()) {
+		return nil, errors.New("A data de devolução deve ser posterior à data atual")
 	}
 
 	// criar empréstimo
