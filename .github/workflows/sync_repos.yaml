@@ -15,7 +15,7 @@ jobs:
         with:
           source_repo: "nandosannn/cinefinder-webII"
           source_branch: "main"
-          destination_repo: "https://${{ secrets.DESTINATION_TOKEN }}@github.com/nattuts/CineFinder_PS.git"
+          destination_repo: "https://x-access-token:${{ secrets.DESTINATION_TOKEN }}@github.com/nattuts/CineFinder_PS.git"
           destination_branch: "main"
 
   sync-to-webii:
@@ -27,5 +27,5 @@ jobs:
         with:
           source_repo: "nattuts/CineFinder_PS"
           source_branch: "main"
-          destination_repo: "https://${{ secrets.DESTINATION_TOKEN }}@github.com/nandosannn/cinefinder-webII.git"
+          destination_repo: "https://x-access-token:${{ secrets.DESTINATION_TOKEN }}@github.com/nandosannn/cinefinder-webII.git"
           destination_branch: "main"
