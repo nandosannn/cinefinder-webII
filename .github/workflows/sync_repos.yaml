@@ -6,14 +6,26 @@ on:
       - main # Define qual branch irá disparar a sincronização
 
 jobs:
-  sync:
+  sync-to-ps:
     if: github.repository == 'nandosannn/cinefinder-webII'
     runs-on: ubuntu-latest
     steps:
-      - name: Sincronizar código
+      - name: Sincronizar para CineFinder_PS
         uses: wei/git-sync@v3
         with:
           source_repo: "nandosannn/cinefinder-webII"
           source_branch: "main"
           destination_repo: "https://${{ secrets.DESTINATION_TOKEN }}@github.com/nattuts/CineFinder_PS.git"
+          destination_branch: "main"
+
+  sync-to-webii:
+    if: github.repository == 'nattuts/CineFinder_PS'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sincronizar para cinefinder-webII
+        uses: wei/git-sync@v3
+        with:
+          source_repo: "nattuts/CineFinder_PS"
+          source_branch: "main"
+          destination_repo: "https://${{ secrets.DESTINATION_TOKEN }}@github.com/nandosannn/cinefinder-webII.git"
           destination_branch: "main"
