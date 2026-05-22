@@ -53,6 +53,25 @@ func (m *mockLoanService) ReturnMovie(id int) error {
 	return nil
 }
 
+func (m *mockLoanService) ListHistory(filter model.LoanFilter) ([]model.LoanHistory, error) {
+	now := time.Now()
+	returnDate := now.Add(24 * time.Hour)
+	return []model.LoanHistory{
+		{
+			ID:         1,
+			LoanDate:   now,
+			ReturnDate: &returnDate,
+			Price:      20,
+			Returned:   false,
+			UserID:     1,
+			UserName:   "Test User",
+			UserEmail:  "test@email.com",
+			MovieID:    1,
+			MovieTitle: "Test Movie",
+		},
+	}, nil
+}
+
 // =====================================
 // TEST CREATE SUCCESS
 // =====================================
@@ -304,6 +323,10 @@ func (m *mockLoanServiceError) ReturnMovie(id int) error {
 	return errors.New("Empréstimo já devolvido")
 }
 
+func (m *mockLoanServiceError) ListHistory(filter model.LoanFilter) ([]model.LoanHistory, error) {
+	return nil, errors.New("erro ao buscar histórico")
+}
+
 // =====================================
 // TEST RETURN MOVIE ERROR
 // =====================================
@@ -336,5 +359,145 @@ func TestReturnMovie_AlreadyReturned(t *testing.T) {
 
 	if w.Result().StatusCode != http.StatusBadRequest {
 		t.Errorf("esperado status 400, veio %d", w.Result().StatusCode)
+	}
+}
+
+// =====================================
+// TEST HISTORY SUCCESS
+// =====================================
+
+func TestHistory_Success(t *testing.T) {
+
+	mockService := &mockLoanService{}
+	handler := NewLoanHandler(mockService)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/loans/history",
+		nil,
+	)
+
+	w := httptest.NewRecorder()
+
+	handler.History(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("esperado status 200, veio %d", resp.StatusCode)
+	}
+
+	var response []model.LoanHistory
+
+	json.NewDecoder(resp.Body).Decode(&response)
+
+	if len(response) == 0 {
+		t.Errorf("esperado lista com histórico de empréstimos")
+	}
+
+	if response[0].MovieTitle == "" {
+		t.Errorf("esperado título do filme no histórico")
+	}
+
+	if response[0].UserName == "" {
+		t.Errorf("esperado nome do usuário no histórico")
+	}
+}
+
+// =====================================
+// TEST HISTORY WITH MOVIE FILTER
+// =====================================
+
+func TestHistory_WithMovieFilter(t *testing.T) {
+
+	mockService := &mockLoanService{}
+	handler := NewLoanHandler(mockService)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/loans/history?movie_id=1",
+		nil,
+	)
+
+	w := httptest.NewRecorder()
+
+	handler.History(w, req)
+
+	resp := w.Result()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("esperado status 200, veio %d", resp.StatusCode)
+	}
+}
+
+// =====================================
+// TEST HISTORY INVALID MOVIE ID
+// =====================================
+
+func TestHistory_InvalidMovieID(t *testing.T) {
+
+	mockService := &mockLoanService{}
+	handler := NewLoanHandler(mockService)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/loans/history?movie_id=abc",
+		nil,
+	)
+
+	w := httptest.NewRecorder()
+
+	handler.History(w, req)
+
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Errorf("esperado status 400, veio %d", w.Result().StatusCode)
+	}
+}
+
+// =====================================
+// TEST HISTORY INVALID DATE
+// =====================================
+
+func TestHistory_InvalidDate(t *testing.T) {
+
+	mockService := &mockLoanService{}
+	handler := NewLoanHandler(mockService)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/loans/history?start_date=data-invalida",
+		nil,
+	)
+
+	w := httptest.NewRecorder()
+
+	handler.History(w, req)
+
+	if w.Result().StatusCode != http.StatusBadRequest {
+		t.Errorf("esperado status 400, veio %d", w.Result().StatusCode)
+	}
+}
+
+// =====================================
+// TEST HISTORY SERVICE ERROR
+// =====================================
+
+func TestHistory_ServiceError(t *testing.T) {
+
+	mockService := &mockLoanServiceError{}
+	handler := NewLoanHandler(mockService)
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/loans/history",
+		nil,
+	)
+
+	w := httptest.NewRecorder()
+
+	handler.History(w, req)
+
+	if w.Result().StatusCode != http.StatusInternalServerError {
+		t.Errorf("esperado status 500, veio %d", w.Result().StatusCode)
 	}
 }
