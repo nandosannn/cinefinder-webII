@@ -44,7 +44,7 @@ func (s *MovieService) Create(movie model.Movie) (*model.Movie, error) {
 		Director:        movie.Director,
 		ReleaseYear:     int32(movie.Year),
 		Genre:           movie.Genre,
-		AvailableCopies: 1,
+		AvailableCopies: int32(movie.Available),
 	})
 
 	if err != nil {
@@ -57,6 +57,7 @@ func (s *MovieService) Create(movie model.Movie) (*model.Movie, error) {
 		Director: created.Director,
 		Year:     int(created.ReleaseYear),
 		Genre:    created.Genre,
+		Available: int(created.AvailableCopies),
 	}, nil
 }
 
@@ -75,6 +76,7 @@ func (s *MovieService) List() ([]model.Movie, error) {
 			Director: m.Director,
 			Year:     int(m.ReleaseYear),
 			Genre:    m.Genre,
+			Available: int(m.AvailableCopies),
 		})
 	}
 
@@ -93,6 +95,7 @@ func (s *MovieService) GetByID(id int) (*model.Movie, error) {
 		Director: m.Director,
 		Year:     int(m.ReleaseYear),
 		Genre:    m.Genre,
+		Available: int(m.AvailableCopies),
 	}, nil
 }
 
@@ -103,7 +106,7 @@ func (s *MovieService) Update(id int, movie model.Movie) (*model.Movie, error) {
 		Director:        movie.Director,
 		ReleaseYear:     int32(movie.Year),
 		Genre:           movie.Genre,
-		AvailableCopies: 1,
+		AvailableCopies: int32(movie.Available),
 	})
 
 	if err != nil {
@@ -116,6 +119,7 @@ func (s *MovieService) Update(id int, movie model.Movie) (*model.Movie, error) {
 		Director: updated.Director,
 		Year:     int(updated.ReleaseYear),
 		Genre:    updated.Genre,
+		Available: int(updated.AvailableCopies),
 	}, nil
 }
 
