@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"cinefinder/internal/model"
@@ -15,6 +16,7 @@ type LoanServiceInterface interface {
 	List() ([]model.Loan, error)
 	GetByID(id int) (*model.Loan, error)
 	ReturnMovie(id int) error
+	ListHistory(filter model.LoanFilter) ([]model.LoanHistory, error)
 }
 
 type LoanService struct {
@@ -267,4 +269,82 @@ func (s *LoanService) ReturnMovie(id int) error {
 	}
 
 	return nil
+}
+
+func (s *LoanService) ListHistory(filter model.LoanFilter) ([]model.LoanHistory, error) {
+	query := `
+	SELECT
+		l.id,
+		l.loan_date,
+		l.return_date,
+		l.price,
+		l.returned,
+		l.user_id,
+		u.name AS user_name,
+		u.email AS user_email,
+		l.movie_id,
+		m.title AS movie_title
+	FROM loans l
+	JOIN users u ON u.id = l.user_id
+	JOIN movies m ON m.id = l.movie_id
+	WHERE 1=1
+	`
+
+	args := []interface{}{}
+	argIndex := 1
+
+	if filter.MovieID > 0 {
+		query += fmt.Sprintf(" AND l.movie_id = $%d", argIndex)
+		args = append(args, filter.MovieID)
+		argIndex++
+	}
+
+	if filter.StartDate != nil {
+		query += fmt.Sprintf(" AND l.loan_date >= $%d", argIndex)
+		args = append(args, *filter.StartDate)
+		argIndex++
+	}
+
+	if filter.EndDate != nil {
+		query += fmt.Sprintf(" AND l.loan_date <= $%d", argIndex)
+		args = append(args, *filter.EndDate)
+		argIndex++
+	}
+
+	query += " ORDER BY l.loan_date DESC"
+
+	rows, err := s.db.Query(context.Background(), query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	history := []model.LoanHistory{}
+
+	for rows.Next() {
+		var h model.LoanHistory
+		var returnDate *time.Time
+
+		err := rows.Scan(
+			&h.ID,
+			&h.LoanDate,
+			&returnDate,
+			&h.Price,
+			&h.Returned,
+			&h.UserID,
+			&h.UserName,
+			&h.UserEmail,
+			&h.MovieID,
+			&h.MovieTitle,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		h.ReturnDate = returnDate
+		history = append(history, h)
+	}
+
+	return history, nil
 }
