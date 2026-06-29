@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"strings"
 
+	"cinefinder/internal/config"
+
 	"github.com/golang-jwt/jwt/v5"
 )
-
-var jwtKey = []byte("chave_secreta")
 
 type contextKey string
 
@@ -29,14 +29,12 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		tokenString := parts[1]
 		claims := jwt.MapClaims{}
-
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		token, err := jwt.ParseWithClaims(parts[1], claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("método de assinatura inesperado: %v", token.Header["alg"])
 			}
-			return jwtKey, nil
+			return config.GetJWTKey(), nil
 		})
 
 		if err != nil || !token.Valid {

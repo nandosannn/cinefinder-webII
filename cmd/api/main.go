@@ -23,7 +23,7 @@ func main() {
 	dbPool := db.NewDB()
 	defer dbPool.Close()
 
-	// criar queries do sqlc
+	// criar queries do sql
 	queries := database.New(dbPool)
 
 	// criar tabela
@@ -39,19 +39,24 @@ func main() {
 	userService := service.NewUserService(dbPool)
 	userHandler := handler.NewUserHandler(userService)
 
-	authService := &service.AuthService{}
-	loginHandler := handler.LoginHandler(authService, userService)
+	authService := service.NewAuthService(dbPool)
 
 	// router
 	r := chi.NewRouter()
 
+	r.Use(middleware.Logger)
+	r.Use(middleware.SecurityHeaders)
+	r.Use(middleware.RateLimit)
+
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status": "ok", "message": "Cinefinder API is running 🚀"}`))
+		w.Write([]byte(`{"status":"ok","message":"Cinefinder API is running 🚀"}`))
 	})
 
 	r.Post("/users", userHandler.Create)
-	r.Post("/login", loginHandler)
+	r.Post("/login", handler.LoginHandler(authService, userService))
+	r.Post("/refresh", handler.RefreshHandler(authService, userService))
+	r.Post("/logout", handler.LogoutHandler(authService))
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
@@ -59,6 +64,8 @@ func main() {
 		r.Post("/movies", movieHandler.Create)
 		r.Get("/movies", movieHandler.List)
 		r.Get("/movies/{id}", movieHandler.GetByID)
+		r.Put("/movies/{id}", movieHandler.Update)
+		r.Delete("/movies/{id}", movieHandler.Delete)
 
 		r.Post("/loans", loanHandler.Create)
 		r.Get("/loans", loanHandler.List)
@@ -68,8 +75,6 @@ func main() {
 
 		r.Get("/users", userHandler.List)
 		r.Get("/users/{id}", userHandler.GetByID)
-		r.Put("/movies/{id}", movieHandler.Update)
-		r.Delete("/movies/{id}", movieHandler.Delete)
 	})
 
 	// subir servidor

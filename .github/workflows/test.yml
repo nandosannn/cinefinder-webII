@@ -17,10 +17,12 @@ jobs:
       - name: Configurar Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: 'stable'
 
       - name: Instalar dependências
         run: go mod tidy
 
       - name: Rodar testes
-        run: go test ./... -v
+        run: go test ./... -v -race -count=1
+        env:
+          JWT_SECRET: ci_test_secret_only

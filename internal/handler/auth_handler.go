@@ -1,9 +1,10 @@
 package handler
 
 import (
-	"cinefinder/internal/service"
 	"encoding/json"
 	"net/http"
+
+	"cinefinder/internal/service"
 )
 
 type LoginRequest struct {
@@ -11,11 +12,23 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func LoginHandler(authService *service.AuthService, userService service.UserServiceInterface) http.HandlerFunc {
+type RefreshRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
+func LoginHandler(authService service.AuthServiceInterface, userService service.UserServiceInterface) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var req LoginRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, "Requisição inválida", http.StatusBadRequest)
+			return
+		}
+		if req.Email == "" || req.Password == "" {
+			http.Error(w, "Email e senha são obrigatórios", http.StatusBadRequest)
 			return
 		}
 
@@ -31,7 +44,89 @@ func LoginHandler(authService *service.AuthService, userService service.UserServ
 			return
 		}
 
+		refreshToken, err := authService.GenerateRefreshToken(r.Context(), user.ID)
+		if err != nil {
+			http.Error(w, "Erro ao gerar refresh token", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"token": token})
+		json.NewEncoder(w).Encode(map[string]string{
+			"token":         token,
+			"refresh_token": refreshToken,
+		})
+	}
+}
+
+func RefreshHandler(authService service.AuthServiceInterface, userService service.UserServiceInterface) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req RefreshRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Requisição inválida", http.StatusBadRequest)
+			return
+		}
+		if req.RefreshToken == "" {
+			http.Error(w, "Refresh token é obrigatório", http.StatusBadRequest)
+			return
+		}
+
+		rt, err := authService.ValidateRefreshToken(r.Context(), req.RefreshToken)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusUnauthorized)
+			return
+		}
+
+		if err := authService.RevokeRefreshToken(r.Context(), req.RefreshToken); err != nil {
+			http.Error(w, "Erro interno", http.StatusInternalServerError)
+			return
+		}
+
+		user, err := userService.GetByID(rt.UserID)
+		if err != nil {
+			http.Error(w, "Usuário não encontrado", http.StatusUnauthorized)
+			return
+		}
+
+		newToken, err := authService.GenerateToken(*user)
+		if err != nil {
+			http.Error(w, "Erro ao gerar token", http.StatusInternalServerError)
+			return
+		}
+
+		newRefreshToken, err := authService.GenerateRefreshToken(r.Context(), user.ID)
+		if err != nil {
+			http.Error(w, "Erro ao gerar refresh token", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"token":         newToken,
+			"refresh_token": newRefreshToken,
+		})
+	}
+}
+
+func LogoutHandler(authService service.AuthServiceInterface) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var req LogoutRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, "Requisição inválida", http.StatusBadRequest)
+			return
+		}
+		if req.RefreshToken == "" {
+			http.Error(w, "Refresh token é obrigatório", http.StatusBadRequest)
+			return
+		}
+
+		if err := authService.RevokeRefreshToken(r.Context(), req.RefreshToken); err != nil {
+			http.Error(w, "Erro ao revogar token", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"message": "Logout realizado com sucesso",
+		})
 	}
 }
