@@ -4,12 +4,19 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("chave_secreta")
+var jwtKey = func() []byte {
+	key := os.Getenv("JWT_SECRET")
+	if key == "" {
+		key = "chave_secreta_dev_fallback"
+	}
+	return []byte(key)
+}()
 
 type contextKey string
 

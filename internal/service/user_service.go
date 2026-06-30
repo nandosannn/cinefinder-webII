@@ -7,6 +7,7 @@ import (
 	"cinefinder/internal/model"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Interface (IMPORTANTE para testes)
@@ -40,27 +41,33 @@ func (s *UserService) Create(user model.User) (*model.User, error) {
 		return nil, errors.New("Usuário já cadastrado")
 	}
 
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, errors.New("erro ao processar senha")
+	}
+
 	query := `
 	INSERT INTO users (name, email, password, created_at)
 	VALUES ($1, $2, $3, NOW())
-	RETURNING id, name, email, password, created_at;
+	RETURNING id, name, email, created_at;
 	`
 
 	err = s.db.QueryRow(context.Background(), query,
 		user.Name,
 		user.Email,
-		user.Password,
-	).Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.CreatedAt)
+		string(hashedPassword),
+	).Scan(&user.ID, &user.Name, &user.Email, &user.CreatedAt)
 
 	if err != nil {
 		return nil, err
 	}
 
+	user.Password = ""
 	return &user, nil
 }
 func (s *UserService) List() ([]model.User, error) {
 	rows, err := s.db.Query(context.Background(),
-		"SELECT id, name, email, password, created_at FROM users",
+		"SELECT id, name, email, created_at FROM users",
 	)
 	if err != nil {
 		return nil, err
@@ -71,7 +78,7 @@ func (s *UserService) List() ([]model.User, error) {
 
 	for rows.Next() {
 		var u model.User
-		err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.CreatedAt)
+		err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +90,7 @@ func (s *UserService) List() ([]model.User, error) {
 
 func (s *UserService) GetByID(id int) (*model.User, error) {
 	query := `
-	SELECT id, name, email, password, created_at
+	SELECT id, name, email, created_at
 	FROM users
 	WHERE id = $1;
 	`
@@ -91,7 +98,7 @@ func (s *UserService) GetByID(id int) (*model.User, error) {
 	var u model.User
 
 	err := s.db.QueryRow(context.Background(), query, id).
-		Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.CreatedAt)
+		Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt)
 
 	if err != nil {
 		return nil, err
@@ -100,15 +107,20 @@ func (s *UserService) GetByID(id int) (*model.User, error) {
 	return &u, nil
 }
 
-// Necessário pro auth
 func (s *UserService) ValidateUser(email, password string) (*model.User, error) {
-	query := "SELECT id, name, email, password, created_at FROM users WHERE email = $1 AND password = $2"
+	query := "SELECT id, name, email, password, created_at FROM users WHERE email = $1"
 	var u model.User
-	err := s.db.QueryRow(context.Background(), query, email, password).
+	err := s.db.QueryRow(context.Background(), query, email).
 		Scan(&u.ID, &u.Name, &u.Email, &u.Password, &u.CreatedAt)
 
 	if err != nil {
 		return nil, errors.New("credenciais inválidas")
 	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		return nil, errors.New("credenciais inválidas")
+	}
+
+	u.Password = ""
 	return &u, nil
 }

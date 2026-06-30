@@ -24,11 +24,12 @@ func (m *mockLoanService) Create(loan model.Loan) (*model.Loan, error) {
 }
 
 func (m *mockLoanService) List() ([]model.Loan, error) {
+	returnDate := time.Now().Add(24 * time.Hour)
 	return []model.Loan{
 		{
 			ID:         1,
 			LoanDate:   time.Now(),
-			ReturnDate: time.Now().Add(24 * time.Hour),
+			ReturnDate: &returnDate,
 			Price:      20,
 			Returned:   false,
 			UserID:     1,
@@ -38,10 +39,11 @@ func (m *mockLoanService) List() ([]model.Loan, error) {
 }
 
 func (m *mockLoanService) GetByID(id int) (*model.Loan, error) {
+	returnDate := time.Now().Add(24 * time.Hour)
 	return &model.Loan{
 		ID:         id,
 		LoanDate:   time.Now(),
-		ReturnDate: time.Now().Add(24 * time.Hour),
+		ReturnDate: &returnDate,
 		Price:      20,
 		Returned:   false,
 		UserID:     1,
@@ -81,8 +83,9 @@ func TestCreateLoan_Success(t *testing.T) {
 	mockService := &mockLoanService{}
 	handler := NewLoanHandler(mockService)
 
+	returnDate := time.Now().Add(24 * time.Hour)
 	body := model.Loan{
-		ReturnDate: time.Now().Add(24 * time.Hour),
+		ReturnDate: &returnDate,
 		Price:      15.5,
 		Returned:   false,
 		UserID:     1,

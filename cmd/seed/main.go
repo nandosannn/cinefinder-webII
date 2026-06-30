@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type Movie struct {
@@ -101,11 +102,16 @@ func main() {
 	fmt.Println("👥 Cadastrando usuários...")
 	userIDs := []int{}
 	for _, u := range users {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("Erro ao gerar hash da senha para %s: %v", u.Name, err)
+		}
+
 		var id int
-		err := pool.QueryRow(ctx, `
+		err = pool.QueryRow(ctx, `
 			INSERT INTO users (name, email, password, created_at)
 			VALUES ($1, $2, $3, NOW() - INTERVAL '10 days') RETURNING id;`,
-			u.Name, u.Email, u.Password,
+			u.Name, u.Email, string(hashedPassword),
 		).Scan(&id)
 		if err != nil {
 			log.Fatalf("Erro ao inserir usuário %s: %v", u.Name, err)

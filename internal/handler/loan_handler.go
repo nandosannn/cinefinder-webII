@@ -28,6 +28,13 @@ func (h *LoanHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if loan.UserID == 0 && loan.User.ID != 0 {
+		loan.UserID = loan.User.ID
+	}
+	if loan.MovieID == 0 && loan.Movie.ID != 0 {
+		loan.MovieID = loan.Movie.ID
+	}
+
 	createdLoan, err := h.service.Create(loan)
 	if err != nil {
 
