@@ -100,7 +100,7 @@ func (s *LoanService) Create(loan model.Loan) (*model.Loan, error) {
 	}
 
 	// validar datas
-	if !loan.ReturnDate.After(time.Now()) {
+	if loan.ReturnDate == nil || !loan.ReturnDate.After(time.Now()) {
 		return nil, errors.New("A data de devolução deve ser posterior à data atual")
 	}
 
@@ -165,13 +165,14 @@ func (s *LoanService) List() ([]model.Loan, error) {
 	for rows.Next() {
 
 		var l model.Loan
+		var returnDate *time.Time
 
 		err := rows.Scan(
 			&l.ID,
 			&l.UserID,
 			&l.MovieID,
 			&l.LoanDate,
-			&l.ReturnDate,
+			&returnDate,
 			&l.Price,
 			&l.Returned,
 		)
@@ -180,6 +181,7 @@ func (s *LoanService) List() ([]model.Loan, error) {
 			return nil, err
 		}
 
+		l.ReturnDate = returnDate
 		loans = append(loans, l)
 	}
 
@@ -202,6 +204,7 @@ func (s *LoanService) GetByID(id int) (*model.Loan, error) {
 	`
 
 	var l model.Loan
+	var returnDate *time.Time
 
 	err := s.db.QueryRow(
 		context.Background(),
@@ -212,7 +215,7 @@ func (s *LoanService) GetByID(id int) (*model.Loan, error) {
 		&l.UserID,
 		&l.MovieID,
 		&l.LoanDate,
-		&l.ReturnDate,
+		&returnDate,
 		&l.Price,
 		&l.Returned,
 	)
@@ -221,6 +224,7 @@ func (s *LoanService) GetByID(id int) (*model.Loan, error) {
 		return nil, err
 	}
 
+	l.ReturnDate = returnDate
 	return &l, nil
 }
 
