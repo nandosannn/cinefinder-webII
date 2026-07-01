@@ -81,7 +81,7 @@ func TestLoginHandler_CredenciaisInvalidas(t *testing.T) {
 func TestLoginHandler_CamposObrigatorios(t *testing.T) {
 	h := LoginHandler(&mockAuthService{}, &mockAuthUserService{})
 
-	body, _ := json.Marshal(map[string]string{"email": "test@test.com"}) // sem senha
+	body, _ := json.Marshal(map[string]string{"email": "test@test.com"})
 	req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(body))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
