@@ -6,26 +6,26 @@ import (
 	"testing"
 	"time"
 
-	"cinefinder/internal/config"
-
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func gerarTokenTeste(userID int) string {
+func gerarTokenTeste(userID int, expirado bool) string {
+	exp := time.Now().Add(time.Hour)
+	if expirado {
+		exp = time.Now().Add(-time.Hour)
+	}
 	claims := jwt.MapClaims{
 		"user_id": float64(userID),
 		"email":   "test@cinefinder.com",
-		"exp":     time.Now().Add(time.Hour).Unix(),
+		"exp":     exp.Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signed, _ := token.SignedString(config.GetJWTKey())
+	signed, _ := token.SignedString(jwtKey)
 	return signed
 }
 
 func TestAuthMiddleware_SemToken(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	h := AuthMiddleware(next)
 
 	req := httptest.NewRequest(http.MethodGet, "/movies", nil)
@@ -38,13 +38,11 @@ func TestAuthMiddleware_SemToken(t *testing.T) {
 }
 
 func TestAuthMiddleware_FormatoInvalido(t *testing.T) {
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	h := AuthMiddleware(next)
 
 	req := httptest.NewRequest(http.MethodGet, "/movies", nil)
-	req.Header.Set("Authorization", "TokenSemBearer")
+	req.Header.Set("Authorization", "SemPrefixoBearer")
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 
@@ -62,9 +60,8 @@ func TestAuthMiddleware_TokenValido(t *testing.T) {
 	})
 	h := AuthMiddleware(next)
 
-	token := gerarTokenTeste(42)
 	req := httptest.NewRequest(http.MethodGet, "/movies", nil)
-	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Authorization", "Bearer "+gerarTokenTeste(42, false))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 
@@ -74,21 +71,11 @@ func TestAuthMiddleware_TokenValido(t *testing.T) {
 }
 
 func TestAuthMiddleware_TokenExpirado(t *testing.T) {
-	claims := jwt.MapClaims{
-		"user_id": float64(1),
-		"email":   "test@cinefinder.com",
-		"exp":     time.Now().Add(-time.Hour).Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenStr, _ := token.SignedString(config.GetJWTKey())
-
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	h := AuthMiddleware(next)
 
 	req := httptest.NewRequest(http.MethodGet, "/movies", nil)
-	req.Header.Set("Authorization", "Bearer "+tokenStr)
+	req.Header.Set("Authorization", "Bearer "+gerarTokenTeste(1, true))
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
 

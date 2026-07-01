@@ -35,7 +35,7 @@ func (rl *rateLimiter) cleanup() {
 	defer rl.mu.Unlock()
 	now := time.Now()
 	for ip, times := range rl.requests {
-		valid := times[:0]
+		var valid []time.Time
 		for _, t := range times {
 			if now.Sub(t) < rl.window {
 				valid = append(valid, t)
@@ -53,9 +53,8 @@ func (rl *rateLimiter) isAllowed(ip string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 	now := time.Now()
-	times := rl.requests[ip]
-	valid := times[:0]
-	for _, t := range times {
+	var valid []time.Time
+	for _, t := range rl.requests[ip] {
 		if now.Sub(t) < rl.window {
 			valid = append(valid, t)
 		}
@@ -67,8 +66,6 @@ func (rl *rateLimiter) isAllowed(ip string) bool {
 	rl.requests[ip] = append(valid, now)
 	return true
 }
-
-var defaultLimiter = newRateLimiter(100, time.Minute)
 
 func RateLimit(next http.Handler) http.Handler {
 	return NewRateLimitMiddleware(100, time.Minute)(next)

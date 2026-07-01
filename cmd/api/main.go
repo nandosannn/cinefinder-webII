@@ -23,7 +23,7 @@ func main() {
 	dbPool := db.NewDB()
 	defer dbPool.Close()
 
-	// criar queries do sql
+	// criar queries do sqlc
 	queries := database.New(dbPool)
 
 	// criar tabela
@@ -49,8 +49,7 @@ func main() {
 	r.Use(middleware.RateLimit)
 
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"status":"ok","message":"Cinefinder API is running 🚀"}`))
+		w.Write([]byte(`{"status": "ok", "message": "Cinefinder API is running 🚀"}`))
 	})
 
 	r.Post("/users", userHandler.Create)

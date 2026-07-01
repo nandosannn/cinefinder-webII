@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS loans (
     movie_id INT NOT NULL REFERENCES movies(id) ON DELETE CASCADE,
     user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     loan_date TIMESTAMP NOT NULL DEFAULT NOW(),
-    return_date TIMESTAMP NOT NULL,
+    return_date TIMESTAMP,
     price DECIMAL(10, 2) NOT NULL,
     returned BOOLEAN NOT NULL DEFAULT FALSE
 );

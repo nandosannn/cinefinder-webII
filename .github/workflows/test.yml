@@ -2,16 +2,15 @@ name: Go CI
 
 on:
   push:
-    branches: [ "main", "develop" ]
+    branches: [ "main", "develop", "feat/owasp" ]
   pull_request:
     branches: [ "main", "develop" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout do código
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Configurar Go
@@ -25,4 +24,4 @@ jobs:
       - name: Rodar testes
         run: go test ./... -v -race -count=1
         env:
-          JWT_SECRET: ci_test_secret_only
+          JWT_SECRET: ci_test_secret_apenas_para_pipeline
